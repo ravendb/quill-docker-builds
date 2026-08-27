@@ -31,14 +31,6 @@ on:
         required: false
         type: boolean
         default: true
-      mode:
-        description: 'Build mode: source (compile Raven.Server + Raven.Studio from repo) | nightly (pull binaries from ravendb-nightly image)'
-        required: false
-        type: choice
-        default: source
-        options:
-          - source
-          - nightly
       dry_run:
         description: 'Dry run - build locally, skip login/push'
         required: false
@@ -85,13 +77,11 @@ jobs:
             ./docker/quill/scripts/build.sh \
               --tag "${{ inputs.docker_repo }}:${{ inputs.version }}-${{ matrix.arch }}" \
               --platforms "${{ matrix.platform }}" \
-              --mode "${{ inputs.mode }}" \
               --dry-run
           else
             ./docker/quill/scripts/build.sh \
               --tag "${{ inputs.docker_repo }}:${{ inputs.version }}-${{ matrix.arch }}" \
               --platforms "${{ matrix.platform }}" \
-              --mode "${{ inputs.mode }}" \
               --push
           fi
 
