@@ -77,11 +77,13 @@ jobs:
             ./docker/quill/scripts/build.sh \
               --tag "${{ inputs.docker_repo }}:${{ inputs.version }}-${{ matrix.arch }}" \
               --platforms "${{ matrix.platform }}" \
+              --version "${{ inputs.version }}" \
               --dry-run
           else
             ./docker/quill/scripts/build.sh \
               --tag "${{ inputs.docker_repo }}:${{ inputs.version }}-${{ matrix.arch }}" \
               --platforms "${{ matrix.platform }}" \
+              --version "${{ inputs.version }}" \
               --push
           fi
 
