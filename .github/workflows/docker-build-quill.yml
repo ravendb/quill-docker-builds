@@ -31,6 +31,11 @@ on:
         required: false
         type: boolean
         default: true
+      payload_base_url:
+        description: 'Base URL of the pre-built Quill payloads (TeamCity uploads Quill-<version>-<arch>.tar.bz2 here via s3uploader.sh)'
+        required: false
+        type: string
+        default: 'https://daily-builds.s3.amazonaws.com'
       dry_run:
         description: 'Dry run - build locally, skip login/push'
         required: false
@@ -73,17 +78,26 @@ jobs:
       - name: Build & push per-arch image
         shell: bash
         run: |
-          if [ -n "$DRY_RUN" ]; then
-            ./docker/quill/scripts/build.sh \
-              --tag "${{ inputs.docker_repo }}:${{ inputs.version }}-${{ matrix.arch }}" \
-              --platforms "${{ matrix.platform }}" \
-              --dry-run
-          else
-            ./docker/quill/scripts/build.sh \
-              --tag "${{ inputs.docker_repo }}:${{ inputs.version }}-${{ matrix.arch }}" \
-              --platforms "${{ matrix.platform }}" \
-              --push
-          fi
+          set -euo pipefail
+
+          case "${{ matrix.arch }}" in
+            amd64)   RID_ARCH=linux-x64 ;;
+            arm64v8) RID_ARCH=linux-arm64 ;;
+            *) echo "unsupported arch: ${{ matrix.arch }}" >&2; exit 1 ;;
+          esac
+
+          PAYLOAD="artifacts/Quill-${{ inputs.version }}-${RID_ARCH}.tar.bz2"
+          mkdir -p artifacts
+          wget -O "$PAYLOAD" "${{ inputs.payload_base_url }}/Quill-${{ inputs.version }}-${RID_ARCH}.tar.bz2"
+
+          ARGS=(
+            --platform "${{ matrix.platform }}"
+            --payload  "$PAYLOAD"
+            --tag      "${{ inputs.docker_repo }}:${{ inputs.version }}-${{ matrix.arch }}"
+          )
+          if [ -n "$DRY_RUN" ]; then ARGS+=(--dry-run); else ARGS+=(--push); fi
+
+          ./docker/quill/scripts/build.sh "${ARGS[@]}"
 
       - name: Docker logout
         if: ${{ always() && inputs.dry_run == '' }}
